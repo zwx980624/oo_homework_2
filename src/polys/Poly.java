@@ -1,35 +1,26 @@
 package polys;
 
 import terms.Term;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Poly
-{
+public class Poly {
     private ArrayList<Term> termList;
 
-    public Poly(ArrayList<Term> tl)
-    {
+    public Poly(ArrayList<Term> tl) {
         termList = new ArrayList<Term>();
-        for (Term t : tl)
-        {
+        for (Term t : tl) {
             int pos = findSameTerm(termList, t);
-            if (pos != -1)
-            {
+            if (pos != -1) {
                 termList.set(pos, termList.get(pos).merge(t));
-                if (termList.get(pos).equals(BigInteger.ZERO))
-                {
+                if (termList.get(pos).equals(BigInteger.ZERO)) {
                     termList.remove(pos);
                 }
-            }
-            else
-            {
-                if (!t.getCoef().equals(BigInteger.ZERO))
-                {
+            } else {
+                if (!t.getCoef().equals(BigInteger.ZERO)) {
                     termList.add(t);
                 }
             }
@@ -37,16 +28,15 @@ public class Poly
     }
 
     // 可输入非法字符串，抛出异常
-    public Poly(String str) throws NumberFormatException
-    {
+    public Poly(String str1) throws NumberFormatException {
+        String str = str1;
         termList = new ArrayList<>();
         //先去掉空格干扰，并检测非法字符
         if (!checkSpaceLegal(str)) {
             throw new NumberFormatException();
         }
         str = str.replaceAll("[ \\t]+", "");
-        if (str.equals(""))
-        {
+        if (str.equals("")) {
             throw new NumberFormatException();
         }
         // 首项之前保证有符号，统一好处理
@@ -64,88 +54,81 @@ public class Poly
             temp = temp.replaceAll("\\-\\+|\\+\\-", "\\-");
             Term t = new Term(temp);
             int pos = findSameTerm(termList, t);
-            if (pos != -1)
-            {
+            if (pos != -1) {
                 termList.set(pos, termList.get(pos).merge(t));
-                if (termList.get(pos).equals(BigInteger.ZERO))
-                {
+                if (termList.get(pos).equals(BigInteger.ZERO)) {
                     termList.remove(pos);
                 }
-            }
-            else
-            {
-                if (!t.getCoef().equals(BigInteger.ZERO))
-                {
+            } else {
+                if (!t.getCoef().equals(BigInteger.ZERO)) {
                     termList.add(t);
                 }
             }
         }
     }
 
-    public String getFirstLegalTerm(String str)
-    {
+    public String getFirstLegalTerm(String str) {
         String numStr = "[\\+\\-]?\\d+";
         String powerFunStr = "x(\\^" + numStr + ")?";
         String sinFunStr = "sin\\(x\\)(\\^" + numStr + ")?";
         String cosFunStr = "cos\\(x\\)(\\^" + numStr + ")?";
         String factorStr = "(" + numStr + ")|(" + powerFunStr + ")|(" +
-                                sinFunStr + ")|(" + cosFunStr + ")";
+                sinFunStr + ")|(" + cosFunStr + ")";
         String termStr = "^[\\+\\-]{1,2}(\\d+\\*)?((" + factorStr +
-                                ")\\*)*+(" +  factorStr + ")";
+                ")\\*)*+(" + factorStr + ")";
         //System.out.println(termStr);
         Pattern r = Pattern.compile(termStr);
         Matcher m = r.matcher(str);
-        if (m.find())
-        {
+        if (m.find()) {
             //System.out.println("First");
             return m.group(0);
-        }
-        else
-        {
+        } else {
             //System.out.println("Second");
             return "";
         }
     }
 
-    private boolean checkSpaceLegal(String str)
-    {
+    private boolean checkSpaceLegal(String str1) {
+        String str = str1;
         //首先看数字间有无空格
         String spaceInNum = "(\\d[ \\t]+\\d)" +
-                "|([\\+\\-\\^][ \\t]*[\\+\\-][ \\t]+\\d)";
+                "|([\\*\\^][ \\t]*[\\+\\-][ \\t]+\\d)" +
+                "|(([\\+\\-][ \\t]*){2}[\\+\\-][ \\t]+\\d)";
         Pattern r = Pattern.compile(spaceInNum);
         Matcher m = r.matcher(str);
-        if(m.find()) return false;
+        if (m.find()) {
+            return false;
+        }
         //去掉sin(x)cos(x)后看看有无其余非法字符
-        str = str.replaceAll("sin\\(x\\)","");
-        str = str.replaceAll("cos\\(x\\)","");
-        r = Pattern.compile("[^x \\t\\d\\^\\+\\-\\*]");
+        str = str.replaceAll("sin", "");
+        str = str.replaceAll("cos", "");
+        r = Pattern.compile("[^x \\t\\d\\^\\+\\-\\*\\(\\)]");
         m = r.matcher(str);
-        if(m.find()) return false;
+        if (m.find()) {
+            return false;
+        }
 
         return true;
     }
 
-    private int findSameTerm(ArrayList<Term> tl, Term t)
-    {
-        for (int i = 0; i < tl.size(); ++i)
-        {
-            if (tl.get(i).isMergeable(t)) return i;
+    private int findSameTerm(ArrayList<Term> tl, Term t) {
+        for (int i = 0; i < tl.size(); ++i) {
+            if (tl.get(i).isMergeable(t)) {
+                return i;
+            }
         }
         return -1;
     }
 
-    public Poly diff()
-    {
+    public Poly diff() {
         ArrayList<Term> tl = new ArrayList<>();
-        for (Term t : termList)
-        {
+        for (Term t : termList) {
             tl.addAll(t.diff().termList);
         }
         return new Poly(tl);
     }
 
-    public String toString()
-    {
+    public String toString() {
         ArrayList<String> termStrs = new ArrayList<>();
         StringBuilder ret = new StringBuilder();
         int ppos = -1;
@@ -179,40 +162,38 @@ public class Poly
         }
     }
 
-    public Poly shorter()
-    {
+    public Poly shorter() {
         ArrayList<Term> tl = (ArrayList<Term>) termList.clone();
-        while (true)
-        {
+        while (true) {
             ArrayList<Term> exSin2 = new ArrayList<>();
             ArrayList<Term> exCos2 = new ArrayList<>();
             Term sin2 = new Term("sin(x)^2");
             Term cos2 = new Term("cos(x)^2");
-            for (Term t : tl)
-            {
+            for (Term t : tl) {
                 exSin2.add(t.extract(sin2));
                 exCos2.add(t.extract(cos2));
             }
             int i = 0;
             int j = 0;
             boolean flag = false;
-            for (i = 0; i < exSin2.size(); i++)
-            {
-                for (j = 0; j < exCos2.size(); j++)
-                {
+            for (i = 0; i < exSin2.size(); i++) {
+                for (j = 0; j < exCos2.size(); j++) {
                     if (exSin2.get(i) != null &&
                             exCos2.get(j) != null &&
-                            exSin2.get(i).equals(exCos2.get(j)))
-                    {
+                            exSin2.get(i).equals(exCos2.get(j))) {
                         flag = true;
                         break;
                     }
                 }
-                if (flag) break;
+                if (flag) {
+                    break;
+                }
             }
-            if (i == exSin2.size()) break;
+            if (i == exSin2.size()) {
+                break;
+            }
             assert i != j;
-            tl.set(i,exSin2.get(i));
+            tl.set(i, exSin2.get(i));
             tl.remove(j);
         }
         return new Poly(tl);
