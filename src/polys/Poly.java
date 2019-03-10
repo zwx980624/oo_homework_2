@@ -99,7 +99,7 @@ public class Poly {
         if (m.find()) {
             return false;
         }
-        //去掉sin(x)cos(x)后看看有无其余非法字符
+        //去掉sin cos后看看有无其余非法字符
         str = str.replaceAll("sin", "");
         str = str.replaceAll("cos", "");
         r = Pattern.compile("[^x \\t\\d\\^\\+\\-\\*\\(\\)]");
