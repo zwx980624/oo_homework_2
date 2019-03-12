@@ -173,7 +173,7 @@ public class Term {
         if (t.coef.equals(BigInteger.ZERO)) {
             return null;
         }
-        if (!coef.mod(t.coef).equals(BigInteger.ZERO)) {
+        if (!coef.mod(t.coef.abs()).equals(BigInteger.ZERO)) {
             return null;
         } else {
             BigInteger c = coef.divide(t.coef);

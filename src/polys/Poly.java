@@ -1,5 +1,6 @@
 package polys;
 
+import factors.Factor;
 import terms.Term;
 
 import java.math.BigInteger;
@@ -167,6 +168,7 @@ public class Poly {
         }
     }
 
+    // deal with aAsin(x)^2+bBcos(x)^2
     public Poly shorter() {
         ArrayList<Term> tl = this.getTermList();
         int time = 5; //最多查5次保证时间
@@ -235,6 +237,158 @@ public class Poly {
             for (int j = 0; j < exCos2.size(); j++) {
                 if (exSin2.get(i) != null && exCos2.get(j) != null &&
                         exSin2.get(i).isMergeable(exCos2.get(j)) &&
+                        !posCos.contains(i) && !posSin.contains(j)) { //防重复
+                    posSin.add(i);
+                    posCos.add(j);
+                }
+            }
+        }
+    }
+
+    // deal with aA + bAcos(x)^2
+    public Poly shorter2() {
+        ArrayList<Term> tl = this.getTermList();
+        int time = 5; //最多查5次保证时间
+        while (time != 0) {
+            time--;
+            ArrayList<Term> exOne = new ArrayList<>(); //保存提取1后剩下的项
+            ArrayList<Term> exCos2 = new ArrayList<>(); //保存提取Cosx2后剩下的项
+            ArrayList<Integer> posOne = new ArrayList<>(); //匹配的下标
+            ArrayList<Integer> posCos = new ArrayList<>();
+            Term one = new Term("1");
+            Term cos2 = new Term("cos(x)^2");
+            for (Term t : tl) {
+                exOne.add(t.extract(one));
+                exCos2.add(t.extract(cos2));
+            }
+            compfunc(exOne, exCos2, posOne, posCos);
+            if (posOne.size() == 0) {
+                break;
+            }
+            boolean flag = false;
+            for (int i = 0; i < posOne.size(); ++i) {
+                int oriLen = tl.get(posOne.get(i)).toString().length() +
+                        tl.get(posCos.get(i)).toString().length();
+                Term axA = exOne.get(posOne.get(i));
+                Term bxA = exCos2.get(posCos.get(i));
+                BigInteger a = axA.getCoef();
+                BigInteger b = bxA.getCoef();
+                //make (a+b)A
+                Term abxA = axA.merge(bxA);
+                // make -bxAsin2
+                Factor ftmp = Factor.factorFactory("sin(x)^2");
+                ArrayList<Factor> fltmp = bxA.getFactList();
+                fltmp.add(ftmp);
+                Term nbxAsin2 = new Term(bxA.getCoef().negate(), fltmp);
+                if (a.add(b).equals(BigInteger.ZERO) ||
+                        abxA.toString().length() +
+                                nbxAsin2.toString().length() < oriLen) {
+                    tl.set(posOne.get(i), axA.merge(bxA));
+                    tl.set(posCos.get(i), nbxAsin2);
+                    flag = true;
+                }
+            }
+            if (!flag) {
+                break;
+            }
+            tl = new Poly(tl).getTermList(); //利用构造函数合并同类项
+        }
+        return new Poly(tl);
+    }
+
+    // deal with aA + bAsin(x)^2
+    public Poly shorter3() {
+        ArrayList<Term> tl = this.getTermList();
+        int time = 5; //最多查5次保证时间
+        while (time != 0) {
+            time--;
+            ArrayList<Term> exOne = new ArrayList<>(); //保存提取1后剩下的项
+            ArrayList<Term> exSin2 = new ArrayList<>(); //保存提取Sinx2后剩下的项
+            ArrayList<Integer> posOne = new ArrayList<>(); //匹配的下标
+            ArrayList<Integer> posSin = new ArrayList<>();
+            Term one = new Term("1");
+            Term cos2 = new Term("sin(x)^2");
+            for (Term t : tl) {
+                exOne.add(t.extract(one));
+                exSin2.add(t.extract(cos2));
+            }
+            compfunc(exOne, exSin2, posOne, posSin);
+            if (posOne.size() == 0) {
+                break;
+            }
+            boolean flag = false;
+            for (int i = 0; i < posOne.size(); ++i) {
+                int oriLen = tl.get(posOne.get(i)).toString().length() +
+                        tl.get(posSin.get(i)).toString().length();
+                Term axA = exOne.get(posOne.get(i));
+                Term bxA = exSin2.get(posSin.get(i));
+                BigInteger a = axA.getCoef();
+                BigInteger b = bxA.getCoef();
+                //make (a+b)A
+                Term abxA = axA.merge(bxA);
+                // make bxAcos2
+                Factor ftmp = Factor.factorFactory("cos(x)^2");
+                ArrayList<Factor> fltmp = bxA.getFactList();
+                fltmp.add(ftmp);
+                Term nbxAcos2 = new Term(bxA.getCoef().negate(), fltmp);
+                if (a.add(b).equals(BigInteger.ZERO) ||
+                        abxA.toString().length() +
+                                nbxAcos2.toString().length() < oriLen) {
+                    tl.set(posOne.get(i), axA.merge(bxA));
+                    tl.set(posSin.get(i), nbxAcos2);
+                    flag = true;
+                }
+            }
+            if (!flag) {
+                break;
+            }
+            tl = new Poly(tl).getTermList(); //利用构造函数合并同类项
+        }
+        return new Poly(tl);
+    }
+
+    // deal with Asin(x)^4 - Acos(x)^4
+    public Poly shorter4() {
+        ArrayList<Term> tl = this.getTermList();
+        int time = 5; //最多查5次保证时间
+        while (time != 0) {
+            time--;
+            ArrayList<Term> exSin4 = new ArrayList<>(); //保存提取Sinx2后剩下的项
+            ArrayList<Term> exCos4 = new ArrayList<>(); //保存提取Cosx2后剩下的项
+            ArrayList<Integer> posSin = new ArrayList<>(); //匹配的下标
+            ArrayList<Integer> posCos = new ArrayList<>();
+            Term sin4 = new Term("sin(x)^4");
+            Term ncos4 = new Term("-cos(x)^4");
+            for (Term t : tl) {
+                exSin4.add(t.extract(sin4));
+                exCos4.add(t.extract(ncos4));
+            }
+            compeqfunc(exSin4, exCos4, posSin, posCos);
+            if (posSin.size() == 0) {
+                break;
+            }
+            for (int i = 0; i < posSin.size(); ++i) {
+                Term termA = exSin4.get(posSin.get(i));
+                ArrayList<Factor> fltmp = termA.getFactList();
+                fltmp.add(Factor.factorFactory("sin(x)^2"));
+                Term termAs2 = new Term(termA.getCoef(), fltmp);
+                tl.set(posSin.get(i), termAs2);
+                fltmp = termA.getFactList();
+                fltmp.add(Factor.factorFactory("cos(x)^2"));
+                Term termAc2 = new Term(termA.getCoef().negate(), fltmp);
+                tl.set(posCos.get(i), termAc2);
+            }
+            tl = new Poly(tl).getTermList(); //利用构造函数合并同类项
+        }
+        return new Poly(tl);
+    }
+
+    private void compeqfunc(ArrayList<Term> exSin2, ArrayList<Term> exCos2,
+                        ArrayList<Integer> posSin, ArrayList<Integer> posCos) {
+        for (int i = 0; i < exSin2.size(); i++) {
+            for (int j = 0; j < exCos2.size(); j++) {
+                if (exSin2.get(i) != null && exCos2.get(j) != null &&
+                        exSin2.get(i).equals(exCos2.get(j)) &&
                         !posCos.contains(i) && !posSin.contains(j)) { //防重复
                     posSin.add(i);
                     posCos.add(j);
