@@ -1,6 +1,7 @@
 package polys;
 
 import terms.Term;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +66,10 @@ public class Poly {
                 }
             }
         }
+    }
+
+    public ArrayList<Term> getTermList() {
+        return (ArrayList<Term>) termList.clone();
     }
 
     public String getFirstLegalTerm(String str) {
@@ -163,39 +168,78 @@ public class Poly {
     }
 
     public Poly shorter() {
-        ArrayList<Term> tl = (ArrayList<Term>) termList.clone();
-        while (true) {
-            ArrayList<Term> exSin2 = new ArrayList<>();
-            ArrayList<Term> exCos2 = new ArrayList<>();
+        ArrayList<Term> tl = this.getTermList();
+        int time = 5; //最多查5次保证时间
+        while (time != 0) {
+            time--;
+            ArrayList<Term> exSin2 = new ArrayList<>(); //保存提取Sinx2后剩下的项
+            ArrayList<Term> exCos2 = new ArrayList<>(); //保存提取Cosx2后剩下的项
+            ArrayList<Integer> posSin = new ArrayList<>(); //匹配的下标
+            ArrayList<Integer> posCos = new ArrayList<>();
             Term sin2 = new Term("sin(x)^2");
             Term cos2 = new Term("cos(x)^2");
             for (Term t : tl) {
                 exSin2.add(t.extract(sin2));
                 exCos2.add(t.extract(cos2));
             }
-            int i = 0;
-            int j = 0;
-            boolean flag = false;
-            for (i = 0; i < exSin2.size(); i++) {
-                for (j = 0; j < exCos2.size(); j++) {
-                    if (exSin2.get(i) != null &&
-                            exCos2.get(j) != null &&
-                            exSin2.get(i).equals(exCos2.get(j))) {
-                        flag = true;
-                        break;
-                    }
-                }
-                if (flag) {
-                    break;
-                }
-            }
-            if (i == exSin2.size()) {
+            compfunc(exSin2, exCos2, posSin, posCos);
+            if (posSin.size() == 0) {
                 break;
             }
-            assert i != j;
-            tl.set(i, exSin2.get(i));
-            tl.remove(j);
+            boolean flag = false;
+            for (int i = 0; i < posSin.size(); ++i) {
+                int oriLen = tl.get(posSin.get(i)).toString().length() +
+                        tl.get(posCos.get(i)).toString().length();
+                Term axA = exSin2.get(posSin.get(i));
+                Term bxA = exCos2.get(posCos.get(i));
+                BigInteger a = axA.getCoef();
+                BigInteger b = bxA.getCoef();
+                // CosTerm = (b-a)*A*cos(x)^2
+                // SinTerm = (a-b)*A*sin(x)^2
+                Term cosTerm = new Term(b.subtract(a),
+                        tl.get(posCos.get(i)).getFactList());
+                Term sinTerm = new Term(a.subtract(b),
+                        tl.get(posSin.get(i)).getFactList());
+                // CosPoly: a*A + (b-a)*A*cos(x)^2
+                // SinPoly: b*A + (a-b)*A*sin(x)^2
+                int cosPolyLen = axA.toString().length() +
+                        cosTerm.toString().length();
+                int sinPolyLen = bxA.toString().length() +
+                        sinTerm.toString().length();
+                if (cosPolyLen < oriLen) {
+                    flag = true;
+                    if (sinPolyLen < cosPolyLen) { // s < c < o
+                        tl.set(posSin.get(i), bxA);
+                        tl.set(posCos.get(i), sinTerm);
+                    } else { // c < s < o || c < o < s
+                        tl.set(posSin.get(i), axA);
+                        tl.set(posCos.get(i), cosTerm);
+                    }
+                } else if (sinPolyLen < oriLen) { // s < o < c
+                    flag = true;
+                    tl.set(posSin.get(i), bxA);
+                    tl.set(posCos.get(i), sinTerm);
+                }
+            }
+            if (!flag) {
+                break;
+            }
+            tl = new Poly(tl).getTermList(); //利用构造函数合并同类项
         }
         return new Poly(tl);
+    }
+
+    private void compfunc(ArrayList<Term> exSin2, ArrayList<Term> exCos2,
+                      ArrayList<Integer> posSin, ArrayList<Integer> posCos) {
+        for (int i = 0; i < exSin2.size(); i++) {
+            for (int j = 0; j < exCos2.size(); j++) {
+                if (exSin2.get(i) != null && exCos2.get(j) != null &&
+                        exSin2.get(i).isMergeable(exCos2.get(j)) &&
+                        !posCos.contains(i) && !posSin.contains(j)) { //防重复
+                    posSin.add(i);
+                    posCos.add(j);
+                }
+            }
+        }
     }
 }

@@ -79,6 +79,10 @@ public class Term {
         return coef;
     }
 
+    public ArrayList<Factor> getFactList() {
+        return (ArrayList<Factor>) factList.clone();
+    }
+
     public Poly diff() {
         ArrayList<Term> tl = new ArrayList<>();
         for (int i = 0; i < factList.size(); i++) {
