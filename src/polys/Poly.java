@@ -17,7 +17,7 @@ public class Poly {
             int pos = findSameTerm(termList, t);
             if (pos != -1) {
                 termList.set(pos, termList.get(pos).merge(t));
-                if (termList.get(pos).equals(BigInteger.ZERO)) {
+                if (termList.get(pos).getCoef().equals(BigInteger.ZERO)) {
                     termList.remove(pos);
                 }
             } else {
@@ -57,7 +57,7 @@ public class Poly {
             int pos = findSameTerm(termList, t);
             if (pos != -1) {
                 termList.set(pos, termList.get(pos).merge(t));
-                if (termList.get(pos).equals(BigInteger.ZERO)) {
+                if (termList.get(pos).getCoef().equals(BigInteger.ZERO)) {
                     termList.remove(pos);
                 }
             } else {

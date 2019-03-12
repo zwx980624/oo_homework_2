@@ -38,7 +38,7 @@ public class Term {
         factList = new ArrayList<>();
         str = str.replaceAll("\\s+", "");
         String[] factstrs = str.split("\\*");
-        // 处理第一非常数项带正负号的情况，去掉符号，并将影响其移入coef中
+        // 处理第一非常数项带正负号或双符号常数的情况，去掉第一个符号，并将影响其移入coef中
         if (factstrs[0].charAt(0) == '-' || factstrs[0].charAt(0) == '+') {
             Pattern r = Pattern.compile("([^\\d\\+\\-])|(^[\\+\\-]{2}\\d)");
             Matcher m = r.matcher(factstrs[0]);
